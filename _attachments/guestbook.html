@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="CouchApp">
+<head>
+  <title>CornerCouch guestbook sample</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css">
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap-theme.min.css">
+  <style type="text/css">
+     .hiddenRow {
+            padding: 0 !important;
+      }
+      .niceBlue {
+         background-image: linear-gradient(to bottom,#d9edf7 0,#b9def0 100%);
+      }
+  </style>
+</head>
+<body style="padding-top: 10px">
+   <div class="container" ng-controller="ctrlGBook1">
+      <div class="navbar navbar-default" role="navigation">
+            <div class="navbar-header">
+               <a class="navbar-brand" href="#">Stuff</a>
+            </div>
+            <div class="navbar-collapse collapse">
+               <ul class="nav navbar-nav">
+                  <li><a ng-show="showInfo" data-toggle="modal" href="#infoModal" data-target="#infoModal">System Info</a></li>
+               </ul>
+               <ul class="nav navbar-nav navbar-right">
+                  <li><a ng-show="showInfo" ng-click="userLogout()" href="#">Logout</a></li>
+                  <li><a ng-show="!showInfo" data-toggle="modal" href="#loginModal" data-target="#loginModal">Login</a></li>
+               </ul>
+            </div>
+      </div>
+      <div class="alert alert-error" ng-show="errordata">{{ errordata | json }}</div>
+      <div id="loginModal" my-modal class="modal fade">
+         <div class="modal-dialog">
+            <div class="modal-content">
+               <div class="modal-header">
+                  <button type="button" class="close" data-dismiss="modal" aria-hidden="true">x</button>
+                  <h4>Login form</h4>
+               </div>
+               <div class="modal-body">
+                  <form class='form-signin' name='loginForm' ng-submit="submitLogin()">
+                     <div class="form-group">
+                        <label for="loginformUser">Login Name</label>
+                        <input id="loginformUser" type='text' name='user' ng-model='loginUser' class="form-control" placeholder="Login Name" required>
+                     </div>
+                     <div class="form-group">
+                        <label for="loginformPass">Password</label>
+                        <input id="loginformPass" type='password' name='pass' ng-model='loginPass' class="form-control" placeholder="Password" required>
+                     </div>
+                     <div>
+                        <button class="btn" data-dismiss="modal">Close</button>
+                        <button class='btn btn-primary' type="submit">Login</button>
+                     </div>
+                  </form>
+               </div>
+            </div>
+         </div>
+      </div>
+      <div id="infoModal" class="modal fade">
+         <div class="modal-dialog">
+            <div class="modal-content niceBlue">
+               <div class="modal-header">
+                  <button type="button" class="close" data-dismiss="modal" aria-hidden="true">x</button>
+                  <h4>CouchDB Connection</h4>
+               </div>
+               <div class="modal-body">
+                  <div>
+                     <br><br>
+                     <pre>server.userCtx = {{ server.userCtx | json }}</pre>
+                     <pre>server.info = {{ server.info | json }}</pre>
+                     <pre>server.userDoc = {{ server.userDoc | json }}</pre>
+                     <pre>gbookdb.info = {{ gbookdb.info | json }}</pre>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      <h3>Guest book entries <small>(click for detail)</small></h3><button ng-show="showInfo" type="button" class="btn btn-primary" data-toggle="modal" data-target="#newEntryModal">New Entry</button>
+    <table class="table table-hover" style="border-collapse:collapse;">
+      <thead>
+         <tr><th>UTC</th><th>Subject</th><th>By</th><th></th></tr>
+      </thead>
+      <tbody>
+         <tr ng-repeat-start="row in gbookdb.rows" ng-click="rowClick($index)">
+            <td class="span2">{{ row.key }}</td>
+            <td class="span6">{{ row.doc.subject }}</td>
+            <td class="span2">{{ row.doc.alias }}</td>
+            <td class="span2"> 
+               <div class="glyphicon glyphicon-remove-circle" ng-show="userCanEdit(row)" style="float: right" ng-click="removeClick(row)"></div>
+            </td>
+        </tr>
+        <tr ng-show="rowExpanded($index)" ng-repeat-end>
+           <td class="span12 niceBlue" colspan="4" >
+              <div class="panel panel-default" ng-show="detail._attachments">
+                 <div class="panel-heading panel-primary">Attachments:</div>
+                 <div class="panel-body">
+                    <div class="row" ng-repeat="(name,info) in detail._attachments">
+                       <div class="col-md-8"><a href="detail.attachUri(name)" target="_blank">{{ name }}</a></div>
+                       <div ng-show="userCanEdit(row)" class="col-md-4" style="float: right"><i class="glyphicon glyphicon-remove-circle" ng-click="detachClick(name)"></i></div>
+                    </div>
+                 </div>
+              </div>
+              <form name="formDetail" role="form">
+                 <div class="form-group">
+                    <label for="formDetailSubject">Subject</label>
+                    <input ng-disabled="!userCanEdit(row)" id="formDetailSubject" name="subject" type="text" class="span9 form-control" ng-model="detail.subject" required>
+                 </div>
+                 <div class="form-group">
+                    <label for="formDetailBody">Message</label>
+                    <textarea ng-disabled="!userCanEdit(row)" id="formDetailBody" name="body" rows="5" class="span9 form-control" ng-model="detail.body"></textarea>
+                 </div>
+                 <div class="form-group" ng-show="userCanEdit(row)">
+                    <label>Add Attachment</label>
+                    <input type="file" id="upload" class="span9 form-control" multiple>
+                    <div class="btn btn-primary span2" style="float: right" ng-click="attachClick()" ng-hide="formDetail.$dirty">Attach</div>
+                 </div>
+                 <div class="btn btn-primary span2" style="float: right" ng-click="updateClick()" ng-show="formDetail.$dirty && userCanEdit(row)">Update</div>
+              </form>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <ul class="pager">
+       <li><a ng-class="{muted: gbookdb.queryActive}" ng-click="prevClick()" ng-show="gbookdb.prevRows.length">Newer</a></li>
+       <li><a ng-class="{muted: gbookdb.queryActive}"  ng-click="nextClick()" ng-show="gbookdb.nextRow">Older</a></li>
+       <li><a ng-class="{muted: gbookdb.queryActive}"  ng-click="moreClick()" ng-show="gbookdb.nextRow">More...</a></li>
+    </ul>
+    <div id="attachmentModal" class="modal fade">
+         <div class="modal-dialog">
+            <div class-"modal-content niceBlue">
+               <div class="modal-header">
+                  <button type="button" class="close" data-dismiss="modal" aria-hidden="true">x</button>
+               </div>
+               <div class="modal-body">
+                  <img ng-src="{{ currentImage }}" />
+               </div>
+            </div>
+         </div>
+    </div>
+    <div id="newEntryModal" my-modal class="modal fade">
+       <div class="modal-dialog">
+          <div class="modal-content niceBlue">
+             <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">x</button>
+                <legend>New guestbook entry</legend>
+             </div>
+             <div class="modal-body">
+                <form role="form" name="formNewEntry" class="offset1 span9" ng-submit="submitEntry()">
+                   <fieldset>
+                      <div class="form-group">
+                         <label for="newEntryAlias" >An alias of your own choice (required)</label>
+                         <input type="text" id="mewEntryAlias" class="span4 form-control" ng-model="newentry.alias" required>
+                      </div>
+                      <div class="form-group">
+                         <label for="newEntryEmail">Your mail address (not shown)</label>
+                         <input type="email" id="newEntryEmail" class="span4 form-control" ng-model="newentry.email">
+                      </div>
+                      <div class="form-group">
+                         <label for="newEntrySubject">Your subject line (required)</label>
+                         <input type="text" id="newEntrySubject" class="span9 form-control" ng-model="newentry.subject" required>
+                      </div>
+                      <div class="form-group">
+                         <label for="newEntryBody">Your message</label>
+                         <textarea rows="5" id="newEntryBody" class="span9 form-control" ng-model="newentry.body"></textarea>
+                      </div>
+                   </fieldset>
+                   <button class="btn" data-dismiss="modal">Close</button>
+                   <button class='btn btn-primary' type="submit" ng-disabled-"formNewEntry.$invalid">Submit</button>
+                </form>
+             </div>
+          </div>
+       </div>
+    </div>
+</div>
+<script type='text/javascript' src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+<script type='text/javascript' src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.3/angular.min.js"></script>
+<script src="js/angular-cornercouch.js"></script>
+<script src="js/app.js" type="application/javascript"></script>
+</body>
+</html>
