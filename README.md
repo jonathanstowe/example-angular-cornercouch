@@ -19,8 +19,9 @@ access the guestbook.html via the attachment to the design document.
 Once you have cloned this to your local machine then you should be able
 to:
 
-   cd example-angular-cornercouch
-   couchapp push http://localhost:5984/gbook 
+    cd example-angular-cornercouch
+
+    couchapp push http://localhost:5984/gbook 
 
 Then you should be able to go to go to:
 
