@@ -1,3 +1,5 @@
+var db_name = 'gbook';
+
 var app = angular.module("CouchApp", [ "CornerCouch" ]);
 
 function ctrlGBook1($scope, $filter, cornercouch) {
@@ -11,7 +13,7 @@ function ctrlGBook1($scope, $filter, cornercouch) {
        }
     });
 
-    $scope.gbookdb = $scope.server.getDB("gbook");
+    $scope.gbookdb = $scope.server.getDB(db_name);
     $scope.gbookdb.getInfo();
     $scope.newentry = $scope.gbookdb.newDoc();
     $scope.gbookdb.query("test", "utc_only", {
