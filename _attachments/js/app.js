@@ -16,7 +16,7 @@ function ctrlGBook1($scope, $filter, cornercouch) {
     $scope.gbookdb = $scope.server.getDB(db_name);
     $scope.gbookdb.getInfo();
     $scope.newentry = $scope.gbookdb.newDoc();
-    $scope.gbookdb.query("test", "utc_only", {
+    $scope.gbookdb.query("example-angular-cornercouch", "utc_only", {
         include_docs: true,
         descending: true,
         limit: 8
